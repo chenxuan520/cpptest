@@ -1,0 +1,28 @@
+version: '1.0'
+name: test
+displayName: test
+triggers:
+  trigger: auto
+  push:
+    branches:
+      prefix:
+        - master
+stages:
+  - name: stage-e5c34b9d
+    displayName: 编译运行
+    strategy: naturally
+    trigger: auto
+    executor: []
+    steps:
+      - step: build@gcc
+        name: build_gcc
+        displayName: 编译运行
+        gccVersion: '9.4'
+        commands:
+          - cd test;
+          - make;
+          - ./main;
+        caches: []
+        notify: []
+        strategy:
+          retry: '0'
