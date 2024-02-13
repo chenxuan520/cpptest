@@ -12,6 +12,8 @@
 
 - [gitee](https://gitee.com/chenxuan520/cpptest)
 
+- [github](https://github.com/chenxuan520/cpptest)
+
 ## 特性
 
 1. 支持类似gtest的TEST宏进行测试,其中大部分函数用法和gtest相同
@@ -222,4 +224,5 @@ TEST(Base, True) { MUST_EQUAL(0, 0); }
 ```
 
 ## TODO
+
 - [ ] 支持多线程并发测试
