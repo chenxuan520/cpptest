@@ -6,10 +6,7 @@ public:
   std::vector<int> arr_;
 };
 
-INIT(Begin) {
-  DEBUG("begin");
-  return 0;
-}
+INIT(Begin) { DEBUG("begin"); }
 
 END(End) { DEBUG("end"); }
 
@@ -19,7 +16,10 @@ ARGC_FUNC {
   }
 }
 
-TEST(Base, True) { MUST_EQUAL(0, 0); }
+TEST(Base, True) {
+  MUST_EQUAL(0, 0);
+  EXPECT_EQ(1, 1);
+}
 
 TEST_F(Example, ArrSize) {
   MUST_EQUAL(arr_.size(), 1);
