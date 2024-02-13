@@ -50,7 +50,7 @@
 
 ## 安装
 
-- linux/mac `wget https://gitee.com/chenxuan520/cpptest/raw/master/test.h`,然后创建一个cpp文件包含test头文件
+- linux/mac `wget https://gitee.com/chenxuan520/cpptest/raw/master/test.h -O test.h`,然后创建一个cpp文件包含test头文件
 
 - win 下载`https://gitee.com/chenxuan520/cpptest/raw/master/test.h`,然后创建一个cpp文件包含test头文件
 
@@ -142,7 +142,6 @@ TEST_F(Example, ArrValue){
 ```cpp
 INIT(TestInit){
 	...
-	return 0; // 返回值没有意义
 }
 ```
 

@@ -57,23 +57,25 @@ public:
 #define _CLASS_FAIL_                                                           \
   cpptest::_test_base::fail_++;                                                \
   cpptest::_test_base::success_--;                                             \
-  this->result_ = false
+  this->result_ = false;
 #define _FILE_LINE_MSG_ __FILE__ << ":" << __LINE__
 
 // test name
-#define _TEST_NAME__CREATE_(test_group, test_name)                             \
-  test_group##test_name##_create
+#define _TEST_NAME_CREATE_(test_group, test_name) test_group##test_name##_create
 #define _TEST_NAME_(test_group, test_name) test_group##test_name##_test
-#define _TEST_INIT_NAME__CREATE_(init_name) init_name##_init##_create
+#define _TEST_INIT_NAME_CREATE_(init_name) init_name##_init##_create
 #define _TEST_INIT_NAME_(init_name) init_name##_init
-#define _TEST_END_NAME__CREATE_(end_name) end_name##_end##_create
+#define _TEST_END_NAME_CREATE_(end_name) end_name##_end##_create
 #define _TEST_END_NAME_(end_name) end_name##_end
 
 // test init function,run before all test example
 #define INIT(init_name)                                                        \
-  int _TEST_INIT_NAME_(init_name)();                                           \
-  auto _TEST_INIT_NAME__CREATE_(init_name) = _TEST_INIT_NAME_(init_name)();    \
-  int _TEST_INIT_NAME_(init_name)()
+  class _TEST_INIT_NAME_(init_name) {                                          \
+  public:                                                                      \
+    _TEST_INIT_NAME_(init_name)();                                             \
+  };                                                                           \
+  _TEST_INIT_NAME_(init_name) _TEST_INIT_NAME_CREATE_(init_name);              \
+  _TEST_INIT_NAME_(init_name)::_TEST_INIT_NAME_(init_name)()
 
 // test end function,run after all test example
 #define END(end_name)                                                          \
@@ -81,7 +83,7 @@ public:
   public:                                                                      \
     ~_TEST_END_NAME_(end_name)();                                              \
   };                                                                           \
-  _TEST_END_NAME_(end_name) _TEST_END_NAME__CREATE_(end_name);                 \
+  _TEST_END_NAME_(end_name) _TEST_END_NAME_CREATE_(end_name);                  \
   _TEST_END_NAME_(end_name)::~_TEST_END_NAME_(end_name)()
 
 // test function for users
@@ -95,7 +97,7 @@ public:
     void TestBody();                                                           \
   };                                                                           \
   _TEST_NAME_(test_group, test_name)                                           \
-  _TEST_NAME__CREATE_(test_group, test_name);                                  \
+  _TEST_NAME_CREATE_(test_group, test_name);                                   \
   void _TEST_NAME_(test_group, test_name)::TestBody()
 
 #define TEST_F(test_class, test_name)                                          \
@@ -109,7 +111,7 @@ public:
     void TestBody();                                                           \
   };                                                                           \
   _TEST_NAME_(test_class, test_name)                                           \
-  _TEST_NAME__CREATE_(test_class, test_name);                                  \
+  _TEST_NAME_CREATE_(test_class, test_name);                                   \
   void _TEST_NAME_(test_class, test_name)::TestBody()
 
 // for use default name for create test example
@@ -127,7 +129,7 @@ public:
   _CLASS_FAIL_
 #define FATAL(text)                                                            \
   _TESTSTDERR_(_TESTRED_("[FATAL] in [" << _FILE_LINE_MSG_ << "] : " << text)) \
-  _CLASS_FAIL_;                                                                \
+  _CLASS_FAIL_                                                                 \
   return;
 #define PANIC(text)                                                            \
   _TESTSTDERR_(                                                                \
