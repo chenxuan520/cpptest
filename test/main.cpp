@@ -2,8 +2,8 @@
 
 class Example : public cpptest::Test {
 public:
-  void SetUp() override { arr.push_back(1); }
-  std::vector<int> arr;
+  void SetUp() override { arr_.push_back(1); }
+  std::vector<int> arr_;
 };
 
 INIT(Begin) {
@@ -22,12 +22,12 @@ ARGC_FUNC {
 TEST(Base, True) { MUST_EQUAL(0, 0); }
 
 TEST_F(Example, ArrSize) {
-  MUST_EQUAL(arr.size(), 1);
-  arr.resize(0);
-  MUST_EQUAL(arr.size(), 0);
+  MUST_EQUAL(arr_.size(), 1);
+  arr_.resize(0);
+  MUST_EQUAL(arr_.size(), 0);
 }
 
-TEST_F(Example, ArrValue) { MUST_EQUAL(arr[0], 1); }
+TEST_F(Example, ArrValue) { MUST_EQUAL(arr_[0], 1); }
 
 TEST_DEFAULT {
   MUST_TRUE(true, "");

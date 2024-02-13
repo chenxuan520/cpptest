@@ -93,11 +93,11 @@ public:
   void SetUp() override{
     arr.push_back(1);
   }
-  std::vector<int> arr;
+  std::vector<int> arr_;
 };
 
 TEST_F(Example, ArrValue){
-  MUST_EQUAL(arr[0], 1);
+  MUST_EQUAL(arr_[0], 1);
 }
 ```
 
@@ -142,6 +142,7 @@ TEST_F(Example, ArrValue){
 ```cpp
 INIT(TestInit){
 	...
+	return 0; // 返回值没有意义
 }
 ```
 
@@ -151,7 +152,7 @@ INIT(TestInit){
 
 	- 在main函数结束之后调用,可以相互先多个
 ```cpp
-INIT(TestEnd){
+END(TestEnd){
 	...
 }
 ```
@@ -166,7 +167,7 @@ INIT(TestEnd){
 ```cpp
 ARGC_FUNC{
   if (argc==2) {
-    REGEX_FILT_TEST(argv[1]);
+    REGEX_FILT_TEST(argv[1]);// 这里是传递正则表达式筛选的
   }
 }
 ```
