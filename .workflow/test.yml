@@ -14,15 +14,17 @@ stages:
     trigger: auto
     executor: []
     steps:
-      - step: build@gcc
-        name: build_gcc
-        displayName: 编译运行
-        gccVersion: '9.4'
-        commands:
-          - cd test;
-          - make;
-          - ./main;
-        caches: []
+      - step: execute@docker
+        name: execute_by_docker
+        displayName: 基于镜像的脚本执行
+        certificate: ''
+        image: ubuntu:22.04
+        command:
+          - apt update
+          - apt install -y build-essential
+          - cd test
+          - make
+          - ./main
         notify: []
         strategy:
           retry: '0'
