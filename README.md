@@ -2,6 +2,9 @@
 - 使用不到200行实现一个简单的C++测试框架
 ## 作者
 - chenxuan
+
+![{text}](http://cdn.androidftp.top/pic/chenxuanweb/dog.png)
+
 ## 特性
 1. 支持类似gtest的TEST宏进行测试
 2. 支持参数自定义,初始化函数,结束函数
@@ -86,3 +89,5 @@ TEST(TestGroup, TestName){
 - 使用ARGC_FUNC,参考 参数处理 部分的demo
 ### 如何实现错误和正确输出分开
 - 默认失败的用例打印在标准错误,正确的在标准输出,两者管道就可以分开
+### 出现编译警告-misc-definitions-in-headers
+- 创建`.clang-tidy`,其中加入`Checks: -misc-definitions-in-headers`
