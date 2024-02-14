@@ -6,6 +6,7 @@
  *    `wget https://gitee.com/chenxuan520/cpptest/raw/master/test.h -O test.h`
  ***********************************************/
 #pragma once
+#include <chrono>
 #include <cstdlib>
 #include <functional>
 #include <iostream>
@@ -194,11 +195,18 @@ static void ArgcFunc(int argc, char **argv);
       }                                                                        \
     }                                                                          \
     _TESTSTDOUT_(_TESTCYAN_("Runing:" << base.test_arr_[i].second));           \
+    auto start = std::chrono::high_resolution_clock::now();                    \
     base.test_arr_[i].first->TestBody();                                       \
+    auto end = std::chrono::high_resolution_clock::now();                      \
+    std::chrono::duration<double> duration = end - start;                      \
     if (base.test_arr_[i].first->result_) {                                    \
-      _TESTSTDOUT_(_TESTGREEN_("Result:PASS") << std::endl);                   \
+      _TESTSTDOUT_(_TESTGREEN_("Result:PASS"                                   \
+                               << " Cost:" << duration.count() << "s")         \
+                   << std::endl);                                              \
     } else {                                                                   \
-      _TESTSTDOUT_(_TESTRED_("Result:Fail") << std::endl);                     \
+      _TESTSTDOUT_(_TESTRED_("Result:Fail"                                     \
+                             << " Cost:" << duration.count() << "s")           \
+                   << std::endl);                                              \
     }                                                                          \
   }                                                                            \
   if (base.regex_filt_ != "") {                                                \

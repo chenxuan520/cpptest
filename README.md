@@ -34,7 +34,7 @@
 
 	2. 代码量方面,很多时候发现测试框架比自己的代码体积还大是个沮丧的事情,特别是写个小项目的时候,大家更情愿进行快速测试,但是慢慢拉gtest就很烦
 
-	3. 很多漫天飞舞的宏,如果各种各样的特性支持,但是很多情况下我们用的只有`TEST`
+	3. 很多漫天飞舞的宏,各种各样的特性支持,但是很多情况下我们用的只有`TEST`
 
 - 除此以外,其他的cpp测试框架要么太大,要么其他依赖(py or node),要么完全独立,导致新的学习成本
 
@@ -49,6 +49,7 @@
 	4. 跨平台支持,支持类似gtest的过滤
 
 ## 安装
+> 编译器至少需要支持C++11
 
 - linux/mac `wget https://gitee.com/chenxuan520/cpptest/raw/master/test.h -O test.h`,然后创建一个cpp文件包含test头文件
 
@@ -126,7 +127,7 @@ TEST_F(Example, ArrValue){
 
 	- 判断是否相等,不相等测试用例会失败,类似ERROR(不会立刻返回)
 
-- **MUST_EQUAL(result, expect)** 和 **ASSERT_EQ(resule, expect)**
+- **MUST_EQUAL(result, expect)** 和 **ASSERT_EQ(result, expect)**
 
 	- 判断是否相等,不相等测试用例会失败,类似FATAL(立刻结束该测试用例)
 
