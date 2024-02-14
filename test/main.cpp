@@ -7,8 +7,10 @@ public:
 };
 
 INIT(Begin) { DEBUG("begin"); }
+INIT(Begin1) { DEBUG("begin1"); }
 
 END(End) { DEBUG("end"); }
+END(End1) { DEBUG("end1"); }
 
 ARGC_FUNC {
   if (argc == 2) {
@@ -32,4 +34,28 @@ TEST_F(Example, ArrValue) { MUST_EQUAL(arr_[0], 1); }
 TEST_DEFAULT {
   MUST_TRUE(true, "");
   MUST_TRUE(true != false, "");
+}
+
+TEST(Defer, VarValue) {
+  int temp = 0;
+  DEFER([&]() -> void {
+    MUST_EQUAL(temp, 4);
+    temp++;
+  });
+  DEFER([&]() -> void {
+    MUST_EQUAL(temp, 3);
+    temp++;
+  });
+  MUST_EQUAL(temp, 0);
+  temp++;
+  {
+    DEFER([&]() -> void {
+      MUST_EQUAL(temp, 2);
+      temp++;
+    });
+    DEFER_DEFAULT {
+      MUST_EQUAL(temp, 1);
+      temp++;
+    };
+  }
 }

@@ -7,6 +7,7 @@
  ***********************************************/
 #pragma once
 #include <cstdlib>
+#include <functional>
 #include <iostream>
 #include <regex>
 #include <string>
@@ -63,9 +64,14 @@ public:
 // test name
 #define _TEST_NAME_CREATE_(test_group, test_name) test_group##test_name##_create
 #define _TEST_NAME_(test_group, test_name) test_group##test_name##_test
-#define _TEST_INIT_NAME_CREATE_(init_name) init_name##_init##_create
+#define _TEST_TOOL_NAME_CREATE_(tool_name, create_name)                        \
+  tool_name##create_name##_create
+#define _TEST_INIT_NAME_CREATE_(init_name)                                     \
+  _TEST_TOOL_NAME_CREATE_(init_, init_name)
+#define _TEST_END_NAME_CREATE_(end_name) _TEST_TOOL_NAME_CREATE_(end_, end_name)
+#define _TEST_DEFER_NAME_CREATE_(defer_name)                                   \
+  _TEST_TOOL_NAME_CREATE_(defer_, defer_name)
 #define _TEST_INIT_NAME_(init_name) init_name##_init
-#define _TEST_END_NAME_CREATE_(end_name) end_name##_end##_create
 #define _TEST_END_NAME_(end_name) end_name##_end
 
 // test init function,run before all test example
@@ -85,6 +91,19 @@ public:
   };                                                                           \
   _TEST_END_NAME_(end_name) _TEST_END_NAME_CREATE_(end_name);                  \
   _TEST_END_NAME_(end_name)::~_TEST_END_NAME_(end_name)()
+
+// defer func like Go
+class _defer_ {
+public:
+  _defer_(std::function<void(void)> func_ptr) : func_ptr_(func_ptr) {}
+  ~_defer_() { func_ptr_(); }
+  std::function<void(void)> func_ptr_;
+};
+#define DEFER(func_ptr)                                                        \
+  cpptest::_defer_ _TEST_DEFER_NAME_CREATE_(__LINE__)(func_ptr)
+#define DEFER_DEFAULT                                                          \
+  cpptest::_defer_ _TEST_DEFER_NAME_CREATE_(__LINE__)(nullptr);                \
+  _TEST_DEFER_NAME_CREATE_(__LINE__).func_ptr_ = [&](void) -> void
 
 // test function for users
 #define TEST(test_group, test_name)                                            \

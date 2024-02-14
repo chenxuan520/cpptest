@@ -183,6 +183,30 @@ TEST(TestGroup, TestName){
 }
 ```
 
+### 其他
+
+- `DEFER(std::function<void(void)>)`
+
+	- 类似Go中的defer语句,默认在作用域结束之后运行,不会被MUST_EQUAL打断运行
+
+	- 先进后执行,和栈类似
+```cpp
+DEFER([&]() -> void {
+  MUST_EQUAL(temp, 2);
+});
+```
+
+- DEFER_DEFAULT
+
+	- 类似defer但是不需要传递指针参数,直接加上{}可以直接编写,默认通过引用自动抓取变量
+
+	- 注意,**{}结束之后需要添加一个;** 因为这是一个语句
+```cpp
+DEFER_DEFAULT {
+  MUST_EQUAL(temp, 1);
+};
+```
+
 ## QA
 
 ### 如何正则表达式筛选测试用例执行
@@ -198,6 +222,8 @@ TEST(TestGroup, TestName){
 - 创建`.clang-tidy`,其中加入`Checks: -misc-definitions-in-headers`
 
 ## Demo
+
+- 参考 test/main.cpp 基本包含所有用法
 
 - 推荐写法
 ```cpp
