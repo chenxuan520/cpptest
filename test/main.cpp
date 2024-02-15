@@ -21,6 +21,8 @@ ARGC_FUNC {
 TEST(Base, True) {
   MUST_EQUAL(0, 0);
   EXPECT_EQ(1, 1);
+  EXPECT_TRUE(1 == 1);
+  MUST_TRUE(1 == 1, "");
 }
 
 TEST_F(Example, ArrSize) {

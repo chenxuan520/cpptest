@@ -26,9 +26,11 @@
 
 5. 跨平台支持(linux/mac/win)
 
+6. 易扩展性,因为只有一个.h文件而且非常少代码,可以很容易看懂并更改
+
 ## 起因
 
-- 之前一致使用gtest,也非常好用,但是gtest太大了,体现在下面两个方面
+- 之前一直使用gtest,也非常好用,但是gtest太大了,体现在下面两个方面
 
 	1. 使用cmake构建,当然大项目使用cmake构建无可厚非,但是有时候一些几千行的小项目的代码,可能使用Makefile构建,或者甚至使用g++编译,这个时候使用gtest必须引入cmake就显得麻烦了
 
@@ -96,7 +98,6 @@ public:
   }
   std::vector<int> arr_;
 };
-
 TEST_F(Example, ArrValue){
   MUST_EQUAL(arr_[0], 1);
 }
@@ -150,7 +151,7 @@ INIT(TestInit){
 
 - END(end_name)
 
-	- 在main函数结束之后调用,可以相互先多个
+	- 在main函数结束之后调用,可以出现多个
 ```cpp
 END(TestEnd){
 	...
@@ -231,21 +232,17 @@ DEFER_DEFAULT {
 // 包含头文件
 #include "../test.h"
 // 包含其他的单元测试头文件
-
 // 设置可以使用正则表达式过滤
 ARGC_FUNC {
   if (argc == 2) {
     REGEX_FILT_TEST(argv[1]);
   }
 }
-
 INIT(Begin) {
   DEBUG("begin");
   return 0;
 }
-
 END(End) { DEBUG("end"); }
-
 // 编写基础测试,核心放在其他头文件中
 TEST(Base, True) { MUST_EQUAL(0, 0); }
 ```

@@ -21,16 +21,31 @@ namespace cpptest {
 class _test_base {
 public:
   bool result_ = true;
+  std::string group_name_ = "";
+  std::string test_name_ = "";
   static std::string regex_filt_;
-  static std::vector<std::pair<_test_base *, std::string>> test_arr_;
+  static std::vector<std::pair<std::string, _test_base *>> test_arr_;
   static int success_;
   static int fail_;
+
+public:
   virtual void TestBody(){};
+  _test_base() {}
+  _test_base(const std::string &group_name, const std::string &test_name)
+      : group_name_(group_name), test_name_(test_name) {
+    this->Init(group_name, test_name);
+  }
+  void Init(const std::string &group_name, const std::string &test_name) {
+    group_name_ = group_name;
+    test_name_ = test_name;
+    test_arr_.push_back({group_name + " " + test_name_, this});
+    success_++;
+  }
 };
 int _test_base::success_ = 0;
 int _test_base::fail_ = 0;
 std::string _test_base::regex_filt_ = "";
-std::vector<std::pair<_test_base *, std::string>> _test_base::test_arr_;
+std::vector<std::pair<std::string, _test_base *>> _test_base::test_arr_;
 
 // for TEST_F
 class Test : public _test_base {
@@ -110,10 +125,8 @@ public:
 #define TEST(test_group, test_name)                                            \
   class _TEST_NAME_(test_group, test_name) : public cpptest::_test_base {      \
   public:                                                                      \
-    _TEST_NAME_(test_group, test_name)() {                                     \
-      test_arr_.push_back({this, _CONNECTSTR_(test_group test_name)});         \
-      this->success_++;                                                        \
-    }                                                                          \
+    _TEST_NAME_(test_group, test_name)                                         \
+    () : _test_base(_CONNECTSTR_(test_group), _CONNECTSTR_(test_name)) {}      \
     void TestBody();                                                           \
   };                                                                           \
   _TEST_NAME_(test_group, test_name)                                           \
@@ -124,8 +137,7 @@ public:
   class _TEST_NAME_(test_class, test_name) : public test_class {               \
   public:                                                                      \
     _TEST_NAME_(test_class, test_name)() {                                     \
-      test_arr_.push_back({this, _CONNECTSTR_(test_class test_name)});         \
-      this->success_++;                                                        \
+      this->Init(_CONNECTSTR_(test_class), _CONNECTSTR_(test_name));           \
       this->SetUp();                                                           \
     }                                                                          \
     void TestBody();                                                           \
@@ -139,30 +151,22 @@ public:
 
 // some function for debug and judge
 #define SKIP()                                                                 \
-  _TESTSTDOUT_(_TESTYELLOW_("[SKIP] in [" << _FILE_LINE_MSG_ << "] : "));      \
+  _TESTSTDOUT_(_TESTYELLOW_("[SKIP]:in [" << _FILE_LINE_MSG_ << "] : "));      \
   return;
 #define DEBUG(text)                                                            \
   _TESTSTDOUT_(                                                                \
-      _TESTYELLOW_("[DEBUG] in [" << _FILE_LINE_MSG_ << "] : " << text))
+      _TESTYELLOW_("[DEBUG]:in [" << _FILE_LINE_MSG_ << "] : " << text))
 #define ERROR(text)                                                            \
-  _TESTSTDERR_(_TESTCAR_("[ERROR] in [" << _FILE_LINE_MSG_ << "] : " << text)) \
+  _TESTSTDERR_(_TESTCAR_("[ERROR]:in [" << _FILE_LINE_MSG_ << "] : " << text)) \
   _CLASS_FAIL_
 #define FATAL(text)                                                            \
-  _TESTSTDERR_(_TESTRED_("[FATAL] in [" << _FILE_LINE_MSG_ << "] : " << text)) \
+  _TESTSTDERR_(_TESTRED_("[FATAL]:in [" << _FILE_LINE_MSG_ << "] : " << text)) \
   _CLASS_FAIL_                                                                 \
   return;
 #define PANIC(text)                                                            \
   _TESTSTDERR_(                                                                \
-      _TESTRED_("[PANIC] in [" << _FILE_LINE_MSG_ << "] : " << text));         \
+      _TESTRED_("[PANIC]:in [" << _FILE_LINE_MSG_ << "] : " << text));         \
   exit(-1);
-#define EXPECT_EQ(result, expect)                                              \
-  if (result != expect) {                                                      \
-    ERROR(_CONNECTSTR_(result want get expect but get) << " " << result)       \
-  }
-#define ASSERT_EQ(result, expect)                                              \
-  if (result != expect) {                                                      \
-    FATAL(result << " " << _CONNECTSTR_(!= expect));                           \
-  }
 #define MUST_EQUAL(result, expect)                                             \
   if (result != expect) {                                                      \
     FATAL(result << " " << _CONNECTSTR_(!= expect));                           \
@@ -171,6 +175,16 @@ public:
   if (!(flag)) {                                                               \
     FATAL(text);                                                               \
   }
+#define EXPECT_EQ(result, expect)                                              \
+  if (result != expect) {                                                      \
+    ERROR(_CONNECTSTR_(result want get expect but get) << " " << result)       \
+  }
+#define EXPECT_TRUE(flag)                                                      \
+  if (!(flag)) {                                                               \
+    ERROR(_CONNECTSTR_(flag is false))                                         \
+  }
+#define ASSERT_EQ(result, expect) MUST_EQUAL(result, expect)
+#define ASSERT_TRUE(flag) MUST_TRUE(flag, "")
 
 // for gtest compatible
 #define SUCCEED() SKIP()
@@ -190,31 +204,31 @@ static void ArgcFunc(int argc, char **argv);
   for (int i = 0; i < base.test_arr_.size(); i++) {                            \
     if (base.regex_filt_ != "") {                                              \
       std::regex pattern(base.regex_filt_);                                    \
-      if (!std::regex_search(base.test_arr_[i].second, pattern)) {             \
+      if (!std::regex_search(base.test_arr_[i].first, pattern)) {              \
         continue;                                                              \
       }                                                                        \
     }                                                                          \
-    _TESTSTDOUT_(_TESTCYAN_("Runing:" << base.test_arr_[i].second));           \
+    _TESTSTDOUT_(_TESTCYAN_("[Runing]:" << base.test_arr_[i].first));          \
     auto start = std::chrono::high_resolution_clock::now();                    \
-    base.test_arr_[i].first->TestBody();                                       \
+    base.test_arr_[i].second->TestBody();                                      \
     auto end = std::chrono::high_resolution_clock::now();                      \
     std::chrono::duration<double> duration = end - start;                      \
-    if (base.test_arr_[i].first->result_) {                                    \
-      _TESTSTDOUT_(_TESTGREEN_("Result:PASS"                                   \
+    if (base.test_arr_[i].second->result_) {                                   \
+      _TESTSTDOUT_(_TESTGREEN_("[Result]:PASS"                                 \
                                << " Cost:" << duration.count() << "s")         \
                    << std::endl);                                              \
     } else {                                                                   \
-      _TESTSTDOUT_(_TESTRED_("Result:Fail"                                     \
+      _TESTSTDOUT_(_TESTRED_("[Result]:Fail"                                   \
                              << " Cost:" << duration.count() << "s")           \
                    << std::endl);                                              \
     }                                                                          \
   }                                                                            \
   if (base.regex_filt_ != "") {                                                \
-    _TESTSTDOUT_(_TESTBLUE_("Regex Filt:" << base.regex_filt_) << std::endl)   \
+    _TESTSTDOUT_(_TESTBLUE_("[Regex Filt]:" << base.regex_filt_) << std::endl) \
   }                                                                            \
-  _TESTSTDOUT_(_TESTBLUE_("Total Run:" << base.success_ + base.fail_))         \
-  _TESTSTDOUT_(_TESTBLUE_("Success Run:" << base.success_))                    \
-  _TESTSTDERR_(_TESTBLUE_("Fail Run:" << base.fail_))
+  _TESTSTDOUT_(_TESTBLUE_("[Total Run]:" << base.success_ + base.fail_))       \
+  _TESTSTDOUT_(_TESTBLUE_("[Success Run]:" << base.success_))                  \
+  _TESTSTDERR_(_TESTBLUE_("[Fail Run]:" << base.fail_))
 
 #define _RUN_TEST_MAIN_                                                        \
   int main(int argc, char *argv[]) {                                           \
