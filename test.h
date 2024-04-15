@@ -126,13 +126,29 @@ public:
 
 // calc cost time run func,return long long stand for,nano second
 #define COSTTIME(func)                                                         \
-  []() -> long long {                                                          \
+  [&]() -> long long {                                                         \
     auto start = std::chrono::high_resolution_clock::now();                    \
     func();                                                                    \
     auto end = std::chrono::high_resolution_clock::now();                      \
     auto duration =                                                            \
         std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);     \
     return duration.count();                                                   \
+  }()
+
+// bench run func,return cost time
+#define BENCHRUN(func, run_time)                                               \
+  [&]() -> long long {                                                         \
+    if (run_time <= 0) {                                                       \
+      return 0;                                                                \
+    }                                                                          \
+    auto start = std::chrono::high_resolution_clock::now();                    \
+    for (int _test_i = 0; _test_i < run_time; ++_test_i) {                     \
+      func();                                                                  \
+    }                                                                          \
+    auto end = std::chrono::high_resolution_clock::now();                      \
+    auto duration =                                                            \
+        std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);     \
+    return duration.count() / run_time;                                        \
   }()
 
 // muti thread run func support,like go's goroutine
