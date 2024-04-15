@@ -1,6 +1,6 @@
 /***********************************************
  * Author: chenxuan-1607772321@qq.com
- * change time:2023-04-14 20:56:46
+ * change time:2024-04-15 14:59
  * description: this is a simple C++ testing framework
  * download or update:
  *    `wget https://gitee.com/chenxuan520/cpptest/raw/master/test.h -O test.h`
@@ -12,6 +12,7 @@
 #include <iostream>
 #include <regex>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -85,6 +86,8 @@ public:
 #define _TEST_INIT_NAME_CREATE_(init_name)                                     \
   _TEST_TOOL_NAME_CREATE_(init_, init_name)
 #define _TEST_END_NAME_CREATE_(end_name) _TEST_TOOL_NAME_CREATE_(end_, end_name)
+#define _TEST_GOROUTINE_NAME_CREATE_(go_name)                                  \
+  _TEST_TOOL_NAME_CREATE_(go_, go_name)
 #define _TEST_DEFER_NAME_CREATE_(defer_name)                                   \
   _TEST_TOOL_NAME_CREATE_(defer_, defer_name)
 #define _TEST_INIT_NAME_(init_name) init_name##_init
@@ -120,6 +123,27 @@ public:
 #define DEFER_DEFAULT                                                          \
   cpptest::_defer_ _TEST_DEFER_NAME_CREATE_(__LINE__)(nullptr);                \
   _TEST_DEFER_NAME_CREATE_(__LINE__).func_ptr_ = [&](void) -> void
+
+// calc cost time run func,return long long stand for,nano second
+#define COSTTIME(func)                                                         \
+  []() -> long long {                                                          \
+    auto start = std::chrono::high_resolution_clock::now();                    \
+    func();                                                                    \
+    auto end = std::chrono::high_resolution_clock::now();                      \
+    auto duration =                                                            \
+        std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);     \
+    return duration.count();                                                   \
+  }()
+
+// muti thread run func support,like go's goroutine
+#define GO(func) std::thread(func).detach();
+#define GO_JOIN(func)                                                          \
+  auto _TEST_GOROUTINE_NAME_CREATE_(__LINE__) = std::thread(func);             \
+  DEFER([&]() -> void {                                                        \
+    if (_TEST_GOROUTINE_NAME_CREATE_(__LINE__).joinable()) {                   \
+      _TEST_GOROUTINE_NAME_CREATE_(__LINE__).join();                           \
+    }                                                                          \
+  });
 
 // test function for users
 #define TEST(test_group, test_name)                                            \
@@ -171,9 +195,9 @@ public:
   if (result != expect) {                                                      \
     FATAL(result << " " << _CONNECTSTR_(!= expect));                           \
   }
-#define MUST_TRUE(flag, text)                                                  \
+#define MUST_TRUE(flag, err_msg)                                               \
   if (!(flag)) {                                                               \
-    FATAL(text);                                                               \
+    FATAL(err_msg);                                                            \
   }
 #define EXPECT_EQ(result, expect)                                              \
   if (result != expect) {                                                      \

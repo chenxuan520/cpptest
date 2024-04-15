@@ -1,4 +1,8 @@
 #include "../test.h"
+#include <cstdio>
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 class Example : public cpptest::Test {
 public:
@@ -61,3 +65,32 @@ TEST(Defer, VarValue) {
     };
   }
 }
+
+#ifndef _WIN32
+TEST(CostTime, Func) {
+  auto cost = COSTTIME([]() { usleep(10); });
+  DEBUG("cost time " << cost);
+  MUST_TRUE(cost > 10000, "cost time wrong");
+}
+
+TEST(MutiThread, GoJoin) {
+  GO_JOIN([]() {
+    DEBUG("thread 1");
+    usleep(10);
+    DEBUG("thread 1");
+  });
+  GO_JOIN([]() { DEBUG("thread 2"); });
+  GO_JOIN([]() { DEBUG("thread 3"); });
+}
+
+TEST(MutiThread, Go) {
+  GO([]() {
+    DEBUG("thread 1");
+    usleep(10);
+    DEBUG("thread 1");
+  });
+  GO([]() { DEBUG("thread 2"); });
+  GO([]() { DEBUG("thread 3"); });
+  usleep(30);
+}
+#endif
