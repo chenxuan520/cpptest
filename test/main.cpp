@@ -94,3 +94,7 @@ TEST(MutiThread, Go) {
   usleep(30);
 }
 #endif
+
+BENCHMARK(Bench, FuncTest) {
+  BENCHFUNC([&]() { usleep(1); });
+}

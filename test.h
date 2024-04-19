@@ -54,6 +54,58 @@ public:
   virtual void SetUp() {}
 };
 
+// benchmark base
+class _benchmark_base {
+public:
+  std::string group_name_ = "";
+  std::string bench_name_ = "";
+  static std::string regex_filt_;
+  static std::vector<std::pair<std::string, _benchmark_base *>> bench_arr_;
+
+public:
+  void Init(const std::string &group_name, const std::string bench_name) {
+    group_name_ = group_name;
+    bench_name_ = bench_name;
+    bench_arr_.push_back({group_name + " " + bench_name, this});
+  }
+  int GetCycleTime() {
+    if (run_time_now_ < run_time_) {
+      return run_time_ + 1;
+    }
+    // 至少运行1s
+    if (run_time_now_ * average_time_ < 100000000) {
+      run_time_ += run_time_ / 4;
+      return run_time_ + 1;
+    }
+
+    // TODO: 优化策略
+    if ((double)last_time_ * (1 + allow_error_percent_ / 100.0) <
+        (double)average_time_) {
+      run_time_ = run_time_now_;
+      return run_time_now_;
+    }
+    if (run_time_ * 2 < allow_max_run_time_) {
+      run_time_ += run_time_ / 4;
+    }
+    return run_time_ + 1;
+  }
+  void CalcRunTime(int run_time) {}
+  inline long long average_time() { return average_time_; }
+  inline long long run_time() { return run_time_; }
+  virtual void BenchBody() {}
+
+public:
+  const int allow_error_percent_ = 5;
+  const int allow_max_run_time_ = 1024;
+  long long average_time_ = 0;
+  long long last_time_ = 0;
+  int run_time_now_ = 0;
+  int run_time_ = 16;
+};
+std::string _benchmark_base::regex_filt_ = "";
+std::vector<std::pair<std::string, _benchmark_base *>>
+    _benchmark_base::bench_arr_;
+
 // std out or stderr
 #define _TESTSTDOUT_(text) std::cout << text << std::endl;
 #define _TESTSTDERR_(text) std::cerr << text << std::endl;
@@ -65,6 +117,7 @@ public:
 #define _TESTBLUE_(text) "\033[34m" << text << "\033[0m"
 #define _TESTCAR_(text) "\033[35m" << text << "\033[0m"
 #define _TESTCYAN_(text) "\033[36m" << text << "\033[0m"
+#define _TESTLIGHTCYAN_(text) "\033[96m" << text << "\033[0m"
 
 // setting macro
 #define REGEX_FILT_TEST(test_regex)                                            \
@@ -124,6 +177,16 @@ public:
   cpptest::_defer_ _TEST_DEFER_NAME_CREATE_(__LINE__)(nullptr);                \
   _TEST_DEFER_NAME_CREATE_(__LINE__).func_ptr_ = [&](void) -> void
 
+// muti thread run func support,like go's goroutine
+#define GO(func) std::thread(func).detach();
+#define GO_JOIN(func)                                                          \
+  auto _TEST_GOROUTINE_NAME_CREATE_(__LINE__) = std::thread(func);             \
+  DEFER([&]() -> void {                                                        \
+    if (_TEST_GOROUTINE_NAME_CREATE_(__LINE__).joinable()) {                   \
+      _TEST_GOROUTINE_NAME_CREATE_(__LINE__).join();                           \
+    }                                                                          \
+  });
+
 // calc cost time run func,return long long stand for,nano second
 #define COSTTIME(func)                                                         \
   [&]() -> long long {                                                         \
@@ -151,15 +214,27 @@ public:
     return duration.count() / run_time;                                        \
   }()
 
-// muti thread run func support,like go's goroutine
-#define GO(func) std::thread(func).detach();
-#define GO_JOIN(func)                                                          \
-  auto _TEST_GOROUTINE_NAME_CREATE_(__LINE__) = std::thread(func);             \
-  DEFER([&]() -> void {                                                        \
-    if (_TEST_GOROUTINE_NAME_CREATE_(__LINE__).joinable()) {                   \
-      _TEST_GOROUTINE_NAME_CREATE_(__LINE__).join();                           \
+// bench function for users
+#define BENCHMARK(bench_group, bench_name)                                     \
+  class _TEST_NAME_(bench_group, bench_name)                                   \
+      : public cpptest::_benchmark_base {                                      \
+  public:                                                                      \
+    _TEST_NAME_(bench_group, bench_name)() {                                   \
+      this->Init(_CONNECTSTR_(bench_group), _CONNECTSTR_(bench_name));         \
     }                                                                          \
-  });
+    void BenchBody();                                                          \
+  };                                                                           \
+  _TEST_NAME_(bench_group, bench_name)                                         \
+  _TEST_NAME_CREATE_(bench_group, bench_name);                                 \
+  void _TEST_NAME_(bench_group, bench_name)::BenchBody()
+
+#define BENCHFUNC(func)                                                        \
+  for (int i = 0; i < this->GetCycleTime(); i++) {                             \
+    this->last_time_ = COSTTIME(func);                                         \
+    this->run_time_now_++;                                                     \
+    this->average_time_ =                                                      \
+        (this->average_time_ * i + this->last_time_) / (i + 1);                \
+  }
 
 // test function for users
 #define TEST(test_group, test_name)                                            \
@@ -270,12 +345,38 @@ static void ArgcFunc(int argc, char **argv);
   _TESTSTDOUT_(_TESTBLUE_("[Success Run]:" << base.success_))                  \
   _TESTSTDERR_(_TESTBLUE_("[Fail Run]:" << base.fail_))
 
+// run all bench test
+#define RUN_ALL_BENCH                                                          \
+  cpptest::_benchmark_base bench;                                              \
+  for (int i = 0; i < bench.bench_arr_.size(); i++) {                          \
+    if (bench.regex_filt_ != "") {                                             \
+      std::regex pattern(bench.regex_filt_);                                   \
+      if (!std::regex_search(bench.bench_arr_[i].first, pattern)) {            \
+        continue;                                                              \
+      }                                                                        \
+    }                                                                          \
+    _TESTSTDOUT_(_TESTCYAN_("[Runing]:" << bench.bench_arr_[i].first));        \
+    bench.bench_arr_[i].second->BenchBody();                                   \
+    _TESTSTDOUT_(                                                              \
+        _TESTGREEN_("[Benchmark]:"                                             \
+                    << "Average Cost:"                                         \
+                    << bench.bench_arr_[i].second->average_time() << " ns"     \
+                    << " Run Time:" << bench.bench_arr_[i].second->run_time()) \
+        << std::endl);                                                         \
+  }                                                                            \
+  if (bench.regex_filt_ != "") {                                               \
+    _TESTSTDOUT_(_TESTBLUE_("[Regex Filt]:" << bench.regex_filt_)              \
+                 << std::endl)                                                 \
+  }                                                                            \
+  _TESTSTDOUT_(_TESTBLUE_("[Total Run]:" << bench.bench_arr_.size()))
+
 #define _RUN_TEST_MAIN_                                                        \
   int main(int argc, char *argv[]) {                                           \
     if (cpptest::__test_argc_funcpr__ != nullptr) {                            \
       cpptest::__test_argc_funcpr__(argc, argv);                               \
     }                                                                          \
     RUN_ALL_TESTS                                                              \
+    RUN_ALL_BENCH                                                              \
     return base.fail_;                                                         \
   }
 
