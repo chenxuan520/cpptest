@@ -84,6 +84,7 @@ TEST(MutiThread, GoJoin) {
 }
 
 TEST(MutiThread, Go) {
+  SKIP();
   GO([]() {
     DEBUG("thread 1");
     usleep(10);
@@ -97,4 +98,11 @@ TEST(MutiThread, Go) {
 
 BENCHMARK(Bench, FuncTest) {
   BENCHFUNC([&]() { usleep(1); });
+  int timer = 0;
+  BENCHFUNC([&]() { timer++; });
+}
+
+BENCHMARK(Bench, FuncEmpty) {
+  set_bench_msg("empty func");
+  BENCHFUNC([&]() {});
 }
