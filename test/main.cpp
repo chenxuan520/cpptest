@@ -83,6 +83,18 @@ TEST(MutiThread, GoJoin) {
   GO_JOIN([]() { DEBUG("thread 3"); });
 }
 
+TEST(MutiThread, GoJoinFor) {
+  cpptest::WaitGroup wait_group;
+  for (int i = 0; i < 3; i++) {
+    wait_group.Add(GO_WAIT([=]() {
+      DEBUG("thread " << i);
+      usleep((3 - i) * 100);
+      DEBUG("thread again " << i);
+    }));
+  }
+  wait_group.Wait();
+}
+
 TEST(MutiThread, Go) {
   SKIP();
   GO([]() {
@@ -94,6 +106,13 @@ TEST(MutiThread, Go) {
   GO([]() { DEBUG("thread 3"); });
   usleep(30);
 }
+
+TEST_ASYNC(Async, Wrong) {
+  usleep(10);
+  MUST_EQUAL(1, 2);
+}
+
+TEST_ASYNC(Async, Right) { MUST_EQUAL(2, 2); }
 #endif
 
 BENCHMARK(Bench, FuncTest) {
