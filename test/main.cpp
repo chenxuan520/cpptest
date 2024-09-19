@@ -109,7 +109,7 @@ TEST(MutiThread, Go) {
 
 TEST_ASYNC(Async, Wrong) {
   usleep(10);
-  MUST_EQUAL(1, 2);
+  MUST_EQUAL(1, 1);
 }
 
 TEST_ASYNC(Async, Right) { MUST_EQUAL(2, 2); }

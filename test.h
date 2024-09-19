@@ -11,6 +11,7 @@
 #include <functional>
 #include <iostream>
 #include <regex>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <utility>
@@ -22,6 +23,8 @@ namespace cpptest {
 class _test_base {
 public:
   bool result_ = true;
+  bool is_async_ = false;
+  std::string err_msg_ = "";
   std::string group_name_ = "";
   std::string test_name_ = "";
   static std::string regex_filt_;
@@ -32,8 +35,9 @@ public:
 public:
   virtual void TestBody(){};
   _test_base() {}
-  _test_base(const std::string &group_name, const std::string &test_name)
-      : group_name_(group_name), test_name_(test_name) {
+  _test_base(const std::string &group_name, const std::string &test_name,
+             bool is_async = false)
+      : group_name_(group_name), test_name_(test_name), is_async_(is_async) {
     this->Init(group_name, test_name);
   }
   void Init(const std::string &group_name, const std::string &test_name) {
@@ -143,7 +147,10 @@ std::vector<std::pair<std::string, _benchmark_base *>>
 
 // util macro
 #define _CONNECTSTR_(...) #__VA_ARGS__
-#define _CLASS_FAIL_                                                           \
+#define _CLASS_FAIL_(text)                                                     \
+  std::ostringstream oss;                                                      \
+  oss << text;                                                                 \
+  this->err_msg_ = oss.str();                                                  \
   cpptest::_test_base::fail_++;                                                \
   cpptest::_test_base::success_--;                                             \
   this->result_ = false;
@@ -157,6 +164,8 @@ std::vector<std::pair<std::string, _benchmark_base *>>
 #define _TEST_INIT_NAME_CREATE_(init_name)                                     \
   _TEST_TOOL_NAME_CREATE_(init_, init_name)
 #define _TEST_END_NAME_CREATE_(end_name) _TEST_TOOL_NAME_CREATE_(end_, end_name)
+#define _TEST_WAITING_NAME_CREATE_(waiting_name)                               \
+  _TEST_TOOL_NAME_CREATE_(wait_, waiting_name)
 #define _TEST_GOROUTINE_NAME_CREATE_(go_name)                                  \
   _TEST_TOOL_NAME_CREATE_(go_, go_name)
 #define _TEST_DEFER_NAME_CREATE_(defer_name)                                   \
@@ -204,8 +213,23 @@ public:
       _TEST_GOROUTINE_NAME_CREATE_(__LINE__).join();                           \
     }                                                                          \
   });
+#define GO_WAIT(func) std::move(std::thread(func))
+
+// like go wait group
+class WaitGroup {
+public:
+  void Add(std::thread t) { thread_arr_.push_back(std::move(t)); }
+  void Wait() {
+    for (auto &t : thread_arr_)
+      t.join();
+  }
+
+private:
+  std::vector<std::thread> thread_arr_;
+};
 
 // calc cost time run func,return long long stand for,nano second
+// 1s = 1000000000ns
 #define COSTTIME(func)                                                         \
   [&]() -> long long {                                                         \
     auto start = std::chrono::high_resolution_clock::now();                    \
@@ -275,6 +299,19 @@ public:
   _TEST_NAME_CREATE_(test_group, test_name);                                   \
   void _TEST_NAME_(test_group, test_name)::TestBody()
 
+#define TEST_ASYNC(test_group, test_name)                                      \
+  class _TEST_NAME_(test_group, test_name) : public cpptest::_test_base {      \
+  public:                                                                      \
+    _TEST_NAME_(test_group, test_name)                                         \
+    ()                                                                         \
+        : _test_base(_CONNECTSTR_(test_group), _CONNECTSTR_(test_name),        \
+                     true) {}                                                  \
+    void TestBody();                                                           \
+  };                                                                           \
+  _TEST_NAME_(test_group, test_name)                                           \
+  _TEST_NAME_CREATE_(test_group, test_name);                                   \
+  void _TEST_NAME_(test_group, test_name)::TestBody()
+
 #define TEST_F(test_class, test_name)                                          \
   class _TEST_NAME_(test_class, test_name) : public test_class {               \
   public:                                                                      \
@@ -300,10 +337,10 @@ public:
       _TESTYELLOW_("[DEBUG]:in [" << _FILE_LINE_MSG_ << "] : " << text))
 #define ERROR(text)                                                            \
   _TESTSTDERR_(_TESTCAR_("[ERROR]:in [" << _FILE_LINE_MSG_ << "] : " << text)) \
-  _CLASS_FAIL_
+  _CLASS_FAIL_(text)
 #define FATAL(text)                                                            \
   _TESTSTDERR_(_TESTRED_("[FATAL]:in [" << _FILE_LINE_MSG_ << "] : " << text)) \
-  _CLASS_FAIL_                                                                 \
+  _CLASS_FAIL_(text)                                                           \
   return;
 #define PANIC(text)                                                            \
   _TESTSTDERR_(                                                                \
@@ -343,12 +380,16 @@ static void ArgcFunc(int argc, char **argv);
 // the main function
 #define RUN_ALL_TESTS                                                          \
   cpptest::_test_base base;                                                    \
+  std::vector<std::pair<std::string, std::string>> fail_msg_arr;               \
   for (int i = 0; i < base.test_arr_.size(); i++) {                            \
     if (base.regex_filt_ != "") {                                              \
       std::regex pattern(base.regex_filt_);                                    \
       if (!std::regex_search(base.test_arr_[i].first, pattern)) {              \
         continue;                                                              \
       }                                                                        \
+    }                                                                          \
+    if (base.test_arr_[i].second->is_async_) {                                 \
+      continue;                                                                \
     }                                                                          \
     _TESTSTDOUT_(_TESTCYAN_("[Runing]:" << base.test_arr_[i].first));          \
     auto start = std::chrono::high_resolution_clock::now();                    \
@@ -363,6 +404,8 @@ static void ArgcFunc(int argc, char **argv);
       _TESTSTDOUT_(_TESTRED_("[Result]:Fail"                                   \
                              << " Cost:" << duration.count() << "s")           \
                    << std::endl);                                              \
+      fail_msg_arr.push_back(                                                  \
+          {base.test_arr_[i].first, base.test_arr_[i].second->err_msg_});      \
     }                                                                          \
   }                                                                            \
   if (base.regex_filt_ != "") {                                                \
@@ -370,7 +413,40 @@ static void ArgcFunc(int argc, char **argv);
   }                                                                            \
   _TESTSTDOUT_(_TESTBLUE_("[Total Run]:" << base.success_ + base.fail_))       \
   _TESTSTDOUT_(_TESTBLUE_("[Success Run]:" << base.success_))                  \
-  _TESTSTDERR_(_TESTBLUE_("[Fail Run]:" << base.fail_))
+  _TESTSTDERR_(_TESTBLUE_("[Fail Run]:" << base.fail_))                        \
+  for (int i = 0; i < base.fail_; i++) {                                       \
+    _TESTSTDERR_(_TESTRED_("[Fail Name]" << fail_msg_arr[i].first << " [Msg]:" \
+                                         << fail_msg_arr[i].second));          \
+  }                                                                            \
+  _TESTSTDOUT_("") // for next line
+
+// run all async test
+#define RUN_ALL_ASYNC_TESTS                                                    \
+  cpptest::_test_base base_sync;                                               \
+  cpptest::WaitGroup wait_group;                                               \
+  for (int i = 0; i < base_sync.test_arr_.size(); i++) {                       \
+    if (base_sync.regex_filt_ != "") {                                         \
+      std::regex pattern(base_sync.regex_filt_);                               \
+      if (!std::regex_search(base_sync.test_arr_[i].first, pattern)) {         \
+        continue;                                                              \
+      }                                                                        \
+    }                                                                          \
+    if (!base_sync.test_arr_[i].second->is_async_) {                           \
+      continue;                                                                \
+    }                                                                          \
+    wait_group.Add(std::thread([&base_sync, i]() -> void {                     \
+      base_sync.test_arr_[i].second->TestBody();                               \
+      std::string result = "[Async Test]" + base_sync.test_arr_[i].first;      \
+      if (base_sync.test_arr_[i].second->result_) {                            \
+        result += ":PASS";                                                     \
+        _TESTSTDOUT_(_TESTGREEN_(result));                                     \
+      } else {                                                                 \
+        result += ":Fail" + base_sync.test_arr_[i].second->err_msg_;           \
+        _TESTSTDOUT_(_TESTRED_(result));                                       \
+      }                                                                        \
+    }));                                                                       \
+  }                                                                            \
+  wait_group.Wait();
 
 // run all bench test
 #define RUN_ALL_BENCH                                                          \
@@ -403,6 +479,7 @@ static void ArgcFunc(int argc, char **argv);
       cpptest::__test_argc_funcpr__(argc, argv);                               \
     }                                                                          \
     RUN_ALL_TESTS                                                              \
+    RUN_ALL_ASYNC_TESTS                                                        \
     RUN_ALL_BENCH                                                              \
     return base.fail_;                                                         \
   }
