@@ -393,7 +393,9 @@ static void ArgcFunc(int argc, char **argv);
     }                                                                          \
     _TESTSTDOUT_(_TESTCYAN_("[Runing]:" << base.test_arr_[i].first));          \
     auto start = std::chrono::high_resolution_clock::now();                    \
-    base.test_arr_[i].second->TestBody();                                      \
+    if (base.test_arr_[i].second->result_) {                                   \
+      base.test_arr_[i].second->TestBody();                                    \
+    }                                                                          \
     auto end = std::chrono::high_resolution_clock::now();                      \
     std::chrono::duration<double> duration = end - start;                      \
     if (base.test_arr_[i].second->result_) {                                   \
