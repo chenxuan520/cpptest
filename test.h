@@ -33,7 +33,7 @@ public:
   static int fail_;
 
 public:
-  virtual void TestBody(){};
+  virtual void TestBody() {};
   _test_base() {}
   _test_base(const std::string &group_name, const std::string &test_name,
              bool is_async = false)
@@ -335,6 +335,8 @@ private:
 #define DEBUG(text)                                                            \
   _TESTSTDOUT_(                                                                \
       _TESTYELLOW_("[DEBUG]:in [" << _FILE_LINE_MSG_ << "] : " << text))
+#define WARNING(text)                                                          \
+  _TESTSTDOUT_(_TESTCAR_("[WARNING]:in [" << _FILE_LINE_MSG_ << "] : " << text))
 #define ERROR(text)                                                            \
   _TESTSTDERR_(_TESTCAR_("[ERROR]:in [" << _FILE_LINE_MSG_ << "] : " << text)) \
   _CLASS_FAIL_(text)
@@ -399,13 +401,13 @@ static void ArgcFunc(int argc, char **argv);
     auto end = std::chrono::high_resolution_clock::now();                      \
     std::chrono::duration<double> duration = end - start;                      \
     if (base.test_arr_[i].second->result_) {                                   \
-      _TESTSTDOUT_(_TESTGREEN_("[Result]:PASS"                                 \
-                               << " Cost:" << duration.count() << "s")         \
-                   << std::endl);                                              \
+      _TESTSTDOUT_(                                                            \
+          _TESTGREEN_("[Result]:PASS" << " Cost:" << duration.count() << "s")  \
+          << std::endl);                                                       \
     } else {                                                                   \
-      _TESTSTDOUT_(_TESTRED_("[Result]:Fail"                                   \
-                             << " Cost:" << duration.count() << "s")           \
-                   << std::endl);                                              \
+      _TESTSTDOUT_(                                                            \
+          _TESTRED_("[Result]:Fail" << " Cost:" << duration.count() << "s")    \
+          << std::endl);                                                       \
       fail_msg_arr.push_back(                                                  \
           {base.test_arr_[i].first, base.test_arr_[i].second->err_msg_});      \
     }                                                                          \
