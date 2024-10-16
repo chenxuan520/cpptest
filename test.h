@@ -147,14 +147,14 @@ std::vector<std::pair<std::string, _benchmark_base *>>
 
 // util macro
 #define _CONNECTSTR_(...) #__VA_ARGS__
+#define _FILE_LINE_MSG_ __FILE__ << ":" << __LINE__
 #define _CLASS_FAIL_(text)                                                     \
   std::ostringstream oss;                                                      \
-  oss << text;                                                                 \
+  oss << "[" << _FILE_LINE_MSG_ << "]:" << text;                               \
   this->err_msg_ = oss.str();                                                  \
   cpptest::_test_base::fail_++;                                                \
   cpptest::_test_base::success_--;                                             \
   this->result_ = false;
-#define _FILE_LINE_MSG_ __FILE__ << ":" << __LINE__
 
 // test name
 #define _TEST_NAME_CREATE_(test_group, test_name) test_group##test_name##_create
@@ -419,8 +419,9 @@ static void ArgcFunc(int argc, char **argv);
   _TESTSTDOUT_(_TESTBLUE_("[Success Run]:" << base.success_))                  \
   _TESTSTDERR_(_TESTBLUE_("[Fail Run]:" << base.fail_))                        \
   for (int i = 0; i < base.fail_; i++) {                                       \
-    _TESTSTDERR_(_TESTRED_("[Fail Name]" << fail_msg_arr[i].first << " [Msg]:" \
-                                         << fail_msg_arr[i].second));          \
+    _TESTSTDERR_(                                                              \
+        _TESTRED_("[Fail Name]:" << fail_msg_arr[i].first                      \
+                                 << " [Msg]:" << fail_msg_arr[i].second));     \
   }                                                                            \
   _TESTSTDOUT_("") // for next line
 
