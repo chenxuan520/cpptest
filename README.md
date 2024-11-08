@@ -1,6 +1,6 @@
 # 轻量级cpp测试框架
 
-- 使用200行实现一个简单的C++测试框架
+- 一个简单的C++测试框架
 
 ## 作者
 
@@ -22,11 +22,15 @@
 
 3. 支持**正则表达式**过滤测试样例
 
-4. **仅仅一个200行头文件**,轻量级,支持cmake,Makefile等管理
+4. **仅仅一个500行头文件**,轻量级,支持cmake,Makefile等管理
 
 5. 跨平台支持(linux/mac/win)
 
 6. 易扩展性,因为只有一个.h文件而且非常少代码,可以很容易看懂并更改
+
+7. 携带大量方便测试的函数 , 类似 DEFER , GO
+
+8. 包含压力测试框架,方便测试函数耗时
 
 ## 起因
 
@@ -112,11 +116,11 @@ TEST_F(Example, ArrValue){
 
 - **ERROR(text)**
 
-	- 打印在标准错误
+	- 打印在标准错误,case 设置为失败
 
 - **FATAL(text)**
 
-	- 和error相同,但是这个测试用例会直接返回
+	- 和error相同,但是这个测试case会直接返回
 
 - PANIC(text)
 
@@ -127,6 +131,14 @@ TEST_F(Example, ArrValue){
 - **EXPECT_EQ(result, expect)**
 
 	- 判断是否相等,不相等测试用例会失败,类似ERROR(不会立刻返回)
+
+-  **EXPECT_TRUE(flag, text)**
+
+	- 判断flag是否为真,为false会失败并打印text,类似ERROR
+
+- **ASSERT_EQ(result, expect)**
+
+    - 判断是否相等,不相等测试用例会失败,类似FATAL(立刻结束该测试用例)
 
 - **MUST_EQUAL(result, expect)** 和 **ASSERT_EQ(result, expect)**
 
@@ -175,7 +187,7 @@ ARGC_FUNC{
 
 ### 跳过用例
 
-- SKIP()
+- SKIP() or Success()
 
 	- 默认是作为成功统计
 ```cpp
@@ -185,7 +197,9 @@ TEST(TestGroup, TestName){
 }
 ```
 
-### 其他
+### Defer
+
+- 类似Go中的defer 语句
 
 - `DEFER(std::function<void(void)>)`
 
@@ -208,6 +222,69 @@ DEFER_DEFAULT {
   MUST_EQUAL(temp, 1);
 };
 ```
+
+### Go
+
+- 类似Go中的go语句
+
+- `GO(std::function<void(void)>)`
+
+    - 传递为函数, 推荐使用lambda 表达式, 这种情况下的thread 默认 detach
+```cpp
+TEST(MutiThread, Go) {
+  SKIP();
+  GO([]() {
+    DEBUG("thread 1");
+    usleep(10);
+    DEBUG("thread 1");
+  });
+  GO([]() { DEBUG("thread 2"); });
+  GO([]() { DEBUG("thread 3"); });
+  usleep(30);
+}
+
+```
+
+- `GO_JOIN(std::function<void(void)>)`
+
+	- 默认 join, join的时间是在当前作用域结束后
+```cpp
+TEST(MutiThread, GoJoin) {
+  GO_JOIN([]() {
+    DEBUG("thread 1");
+    usleep(10);
+    DEBUG("thread 1");
+  });
+  GO_JOIN([]() { DEBUG("thread 2"); });
+  GO_JOIN([]() { DEBUG("thread 3"); });
+}
+
+```
+
+- `GO_WAIT(std::function<void(void)>)`
+
+    - 用于 WaitGroup 的 Add 函数中, 实现类似Go的WaitGroup 功能
+```cpp
+TEST(MutiThread, GoJoinFor) {
+  cpptest::WaitGroup wait_group;
+  for (int i = 0; i < 3; i++) {
+    wait_group.Add(GO_WAIT([=]() {
+      DEBUG("thread " << i);
+      usleep((3 - i) * 100);
+      DEBUG("thread again " << i);
+    }));
+  }
+  wait_group.Wait();
+}
+
+```
+
+### 压力测试
+
+- `BENCHMARK(BenchGroup, BenchName)` 和 TEST 宏类似,主要是定义 case
+
+- `BENCHFUNC(std::function<void(void)>)` 测试该函数的执行时间, 循环次数内部系统内部动态自动调整
+
 
 ## QA
 
