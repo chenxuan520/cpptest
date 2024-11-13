@@ -7,15 +7,18 @@
  ***********************************************/
 #pragma once
 #include <chrono>
-#include <cstdlib>
-#include <functional>
 #include <iostream>
 #include <regex>
-#include <sstream>
 #include <string>
 #include <thread>
-#include <utility>
 #include <vector>
+
+#ifdef _WIN32
+// for avoid conflict with wingdi.h
+#ifdef ERROR
+#undef ERROR
+#endif
+#endif
 
 namespace cpptest {
 
