@@ -1,5 +1,7 @@
 # 轻量级cpp测试框架
 
+>  English version of README.md is [here](README.en.md)
+
 - 一个简单的C++测试框架
 
 ## 作者
@@ -187,7 +189,7 @@ ARGC_FUNC{
 
 ### 跳过用例
 
-- SKIP() or Success()
+- SKIP() or SUCCESS()
 
 	- 默认是作为成功统计
 ```cpp
@@ -285,6 +287,14 @@ TEST(MutiThread, GoJoinFor) {
 
 - `BENCHFUNC(std::function<void(void)>)` 测试该函数的执行时间, 循环次数内部系统内部动态自动调整
 
+```cpp
+BENCHMARK(Bench, FuncEmpty) {
+  set_bench_msg("empty func");
+  BENCHFUNC([&]() {});
+}
+```
+
+- `BENCH_INDEPENDENT(func, run_time)` 独立的压力测试, 可用于 TEST 配合断言使用, 返回值为运行时间,单位为 ns
 
 ## QA
 
