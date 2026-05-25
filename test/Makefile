@@ -5,4 +5,4 @@ source=./main.cpp
 obj=main
 
 main:$(source)
-	g++ $(source) -o $(obj) -lpthread
+	clang++ -std=c++17 $(source) -o $(obj) -lpthread

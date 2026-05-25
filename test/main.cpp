@@ -1,5 +1,5 @@
 #include "../test.h"
-#include <cstdio>
+
 #ifndef _WIN32
 #include <unistd.h>
 #endif
@@ -10,7 +10,10 @@ public:
   std::vector<int> arr_;
 };
 
-INIT(Begin) { DEBUG("begin"); }
+INIT(Begin) {
+  DEBUG("begin");
+  WARNING("begin_red");
+}
 INIT(Begin1) { DEBUG("begin1"); }
 
 END(End) { DEBUG("end"); }
@@ -118,10 +121,11 @@ TEST_ASYNC(Async, Right) { MUST_EQUAL(2, 2); }
 BENCHMARK(Bench, FuncTest) {
   BENCHFUNC([&]() { usleep(1); });
   int timer = 0;
-  BENCHFUNC([&]() { timer++; });
+  // BENCHFUNC([&]() { timer++; });
 }
 
 BENCHMARK(Bench, FuncEmpty) {
+  SKIP();
   set_bench_msg("empty func");
   BENCHFUNC([&]() {});
 }

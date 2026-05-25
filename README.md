@@ -57,7 +57,7 @@
 	4. 跨平台支持,支持类似gtest的过滤
 
 ## 安装
-> 编译器至少需要支持C++11
+> 编译器至少需要支持C++17 (使用了 `static inline` 成员变量以支持 header-only 在多 TU 下的安全包含)
 
 - linux/mac `wget https://gitee.com/chenxuan520/cpptest/raw/master/test.h -O test.h`,然后创建一个cpp文件包含test头文件
 

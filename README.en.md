@@ -55,7 +55,7 @@
     4. It has cross-platform support and supports filtering similar to GTest.
 
 ## Installation
-> The compiler needs to support at least C++11.
+> The compiler needs to support at least C++17 (uses `static inline` member variables so the header can be safely included from multiple translation units).
 
 - For Linux/Mac, use `wget https://gitee.com/chenxuan520/cpptest/raw/master/test.h -O test.h`, and then create a Cpp file that includes the test header file.
 

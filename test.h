@@ -30,10 +30,10 @@ public:
   std::string err_msg_ = "";
   std::string group_name_ = "";
   std::string test_name_ = "";
-  static std::string regex_filt_;
-  static std::vector<std::pair<std::string, _test_base *>> test_arr_;
-  static int success_;
-  static int fail_;
+  static inline std::string regex_filt_ = "";
+  static inline std::vector<std::pair<std::string, _test_base *>> test_arr_{};
+  static inline int success_ = 0;
+  static inline int fail_ = 0;
 
 public:
   virtual void TestBody() {};
@@ -50,11 +50,6 @@ public:
     success_++;
   }
 };
-int _test_base::success_ = 0;
-int _test_base::fail_ = 0;
-std::string _test_base::regex_filt_ = "";
-std::vector<std::pair<std::string, _test_base *>> _test_base::test_arr_;
-
 // for TEST_F
 class Test : public _test_base {
 public:
@@ -66,8 +61,9 @@ class _benchmark_base {
 public:
   std::string group_name_ = "";
   std::string bench_name_ = "";
-  static std::string regex_filt_;
-  static std::vector<std::pair<std::string, _benchmark_base *>> bench_arr_;
+  static inline std::string regex_filt_ = "";
+  static inline std::vector<std::pair<std::string, _benchmark_base *>>
+      bench_arr_{};
 
 public:
   void Init(const std::string &group_name, const std::string bench_name) {
@@ -127,10 +123,6 @@ protected:
   int run_limit_second_ = 1;
   std::string bench_msg_ = "";
 };
-std::string _benchmark_base::regex_filt_ = "";
-std::vector<std::pair<std::string, _benchmark_base *>>
-    _benchmark_base::bench_arr_;
-
 // std out or stderr
 #define _TESTSTDOUT_(text) std::cout << text << std::endl;
 #define _TESTSTDERR_(text) std::cerr << text << std::endl;
